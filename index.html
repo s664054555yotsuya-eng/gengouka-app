@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>言語化トレーニング</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #eef4fb;
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .screen-flex { display: none; flex-direction: column; height: 100dvh; }
+  .screen-flex.active { display: flex; }
+
+  /* Header */
+  .header { padding: 52px 20px 8px; }
+  .label { color: #7aa0c0; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .h1 { font-size: 26px; font-weight: 800; color: #1a2a3a; line-height: 1.3; }
+  .h2 { font-size: 20px; font-weight: 800; color: #1a2a3a; }
+  .back-btn {
+    background: none; border: none; color: #3aa8e8; font-size: 15px;
+    cursor: pointer; padding: 0; margin-bottom: 8px; display: block;
+    font-family: inherit;
+  }
+
+  /* Cards */
+  .card {
+    background: #fff; border-radius: 20px; padding: 24px; margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,100,200,0.07);
+  }
+  .icon-circle {
+    width: 60px; height: 60px; border-radius: 50%; background: #ddeeff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin-bottom: 16px;
+  }
+  .icon-sm {
+    width: 44px; height: 44px; border-radius: 50%; background: #ddeeff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+
+  /* Buttons */
+  .btn {
+    background: #3aa8e8; color: #fff; border: none; border-radius: 30px;
+    padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-full {
+    background: #3aa8e8; color: #fff; border: none; border-radius: 30px;
+    padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer;
+    width: 100%; font-family: inherit; display: block;
+  }
+  .btn-outline {
+    background: #e8f4fc; color: #3aa8e8; border: none; border-radius: 30px;
+    padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer;
+    width: 100%; font-family: inherit; display: block; margin-top: 10px;
+  }
+  .btn:disabled, .btn-full:disabled { opacity: 0.5; cursor: not-allowed; }
+  .chip {
+    background: #e8f4fc; color: #2a6a9a; border: none; border-radius: 20px;
+    padding: 10px 16px; font-size: 13px; cursor: pointer; text-align: left;
+    line-height: 1.4; display: block; width: 100%; font-family: inherit;
+    margin-bottom: 8px;
+  }
+  .chip:hover { background: #d4ecf9; }
+
+  /* Section */
+  .section { padding: 0 20px; margin-bottom: 16px; }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+  /* Mode card */
+  .mode-card {
+    background: #fff; border-radius: 16px; padding: 16px 20px; margin-bottom: 12px;
+    display: flex; align-items: flex-start; gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,100,200,0.06); cursor: pointer;
+  }
+  .mode-card:hover { background: #f8fbff; }
+  .badge {
+    background: #e8f4fc; color: #3aa8e8; border-radius: 20px;
+    padding: 2px 10px; font-size: 11px; font-weight: 700; margin-left: 8px;
+  }
+
+  /* Nav */
+  .nav {
+    position: sticky; bottom: 0; background: #fff;
+    border-top: 1px solid #e8f0f8; display: flex; padding: 12px 0 24px;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; cursor: pointer; font-size: 11px;
+    font-family: inherit; color: #9ab;
+  }
+  .nav-btn.active { color: #3aa8e8; font-weight: 700; }
+  .nav-icon { font-size: 20px; }
+
+  /* Session */
+  .session-header {
+    padding: 52px 20px 12px; border-bottom: 1px solid #e0eaf5;
+    background: #eef4fb; flex-shrink: 0;
+  }
+  .session-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .step-badge {
+    background: #e8f4fc; color: #3aa8e8; border-radius: 12px;
+    padding: 6px 14px; font-size: 13px; font-weight: 700;
+  }
+  .messages {
+    flex: 1; overflow-y: auto; padding: 20px; display: flex;
+    flex-direction: column; gap: 12px;
+  }
+  .msg-row-user { display: flex; justify-content: flex-end; }
+  .msg-row-ai { display: flex; justify-content: flex-start; }
+  .bubble-user {
+    background: #3aa8e8; color: #fff; border-radius: 18px 18px 4px 18px;
+    padding: 12px 16px; max-width: 85%; font-size: 14px; line-height: 1.6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .bubble-ai {
+    background: #fff; color: #1a2a3a; border-radius: 18px 18px 18px 4px;
+    padding: 12px 16px; max-width: 85%; font-size: 14px; line-height: 1.6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .bubble-loading { color: #7aa0c0; }
+  .input-area {
+    padding: 8px 16px 32px; background: #fff;
+    border-top: 1px solid #e8f0f8; flex-shrink: 0;
+  }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .input-box {
+    flex: 1; border: 1.5px solid #ddeeff; border-radius: 16px;
+    padding: 10px 14px; font-size: 15px; font-family: inherit;
+    background: #f8fbff; color: #1a2a3a; resize: none;
+    min-height: 44px; max-height: 120px; outline: none;
+  }
+  .send-btn {
+    background: #3aa8e8; color: #fff; border: none; border-radius: 20px;
+    padding: 10px 16px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Result */
+  .score { font-size: 48px; font-weight: 900; color: #3aa8e8; margin-bottom: 8px; }
+  .phrase-card {
+    background: #e8f4fc; border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 10px; font-size: 13px; color: #2a5a8a; line-height: 1.7;
+  }
+  .insight-card {
+    background: #f0f8ff; border: 1.5px solid #c8e8f8; border-radius: 20px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .log-entry { margin-bottom: 10px; font-size: 12px; line-height: 1.6; }
+  .log-entry.user { color: #1a2a3a; }
+  .log-entry.ai { color: #4a7a9a; }
+  .log-name { font-weight: 700; }
+
+  /* History */
+  .history-card {
+    background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,100,200,0.07); cursor: pointer;
+  }
+  .empty-msg { text-align: center; color: #7aa0c0; padding: 60px 20px; font-size: 14px; }
+
+  /* Sticky footer for mode-select */
+  .sticky-footer {
+    position: sticky; bottom: 0; padding: 12px 20px 32px; background: #eef4fb;
+  }
+
+  .pb80 { height: 80px; }
+  .p20 { padding: 0 20px; }
+  .mt8 { margin-top: 8px; }
+  .mt16 { margin-top: 16px; }
+  .mb8 { margin-bottom: 8px; }
+  .mb16 { margin-bottom: 16px; }
+  .text-blue { color: #3aa8e8; font-size: 11px; font-weight: 700; }
+  .text-gray { color: #7aa0c0; font-size: 12px; }
+  .text-sm { font-size: 13px; color: #7aa0c0; line-height: 1.6; }
+  .text-body { font-size: 14px; color: #4a6a8a; line-height: 1.7; }
+  .fw800 { font-weight: 800; }
+</style>
+</head>
+<body>
+
+<!-- ===== HOME ===== -->
+<div id="screen-home" class="screen active">
+  <div class="header">
+    <div class="label">今日の言語化</div>
+    <h1 class="h1">言葉にする練習を、<br>少しずつ。</h1>
+  </div>
+  <div class="p20">
+    <div class="card">
+      <div class="icon-circle">✨</div>
+      <div style="font-size:11px;color:#7aa0c0;font-weight:600;margin-bottom:6px">1日1課題</div>
+      <div style="font-size:18px;font-weight:800;color:#1a2a3a;margin-bottom:8px">抽象的な目標を、今日できる行動に落とし込んでみよう</div>
+      <div class="text-sm" style="margin-bottom:20px">テーマがなくても大丈夫です。おすすめから選ぶだけで練習を始められます。</div>
+      <button class="btn" onclick="goModeSelect(2)">始める</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="row">
+      <div class="h2">練習を選ぶ</div>
+      <div class="text-gray">3つの型から選択</div>
+    </div>
+    <div class="mode-card" onclick="goModeSelect(0)">
+      <div class="icon-sm">💡</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:#1a2a3a;margin-bottom:4px">5回のWhy深掘り<span class="badge">約5分</span></div>
+        <div style="font-size:12px;color:#3aa8e8;font-weight:600;margin-bottom:4px">考えの根っこを見つける</div>
+        <div style="font-size:12px;color:#7aa0c0;line-height:1.5">AIが最大5回まで「なぜ？」を重ね、曖昧な思考を理由・背景・価値観まで掘り下げます。</div>
+      </div>
+      <div style="color:#bcd;font-size:18px;align-self:center">›</div>
+    </div>
+    <div class="mode-card" onclick="goModeSelect(1)">
+      <div class="icon-sm">💬</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:#1a2a3a;margin-bottom:4px">例え話<span class="badge">約4分</span></div>
+        <div style="font-size:12px;color:#3aa8e8;font-weight:600;margin-bottom:4px">伝わる比喩に変える</div>
+        <div style="font-size:12px;color:#7aa0c0;line-height:1.5">難しい考えを身近な例えに変換し、相手に伝わりやすい言い回しへ整えます。</div>
+      </div>
+      <div style="color:#bcd;font-size:18px;align-self:center">›</div>
+    </div>
+    <div class="mode-card" onclick="goModeSelect(2)">
+      <div class="icon-sm">📄</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:#1a2a3a;margin-bottom:4px">抽象から具体<span class="badge">約4分</span></div>
+        <div style="font-size:12px;color:#3aa8e8;font-weight:600;margin-bottom:4px">ふわっとした考えを行動へ</div>
+        <div style="font-size:12px;color:#7aa0c0;line-height:1.5">抽象的な言葉を、場面・行動・具体例に分解して説明できる形にします。</div>
+      </div>
+      <div style="color:#bcd;font-size:18px;align-self:center">›</div>
+    </div>
+  </div>
+  <div class="pb80"></div>
+  <div class="nav">
+    <button class="nav-btn active"><span class="nav-icon">🏠</span>ホーム</button>
+    <button class="nav-btn" onclick="showScreen('history')"><span class="nav-icon">🕐</span>履歴</button>
+  </div>
+</div>
+
+<!-- ===== MODE SELECT ===== -->
+<div id="screen-mode-select" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('home')">戻る</button>
+  </div>
+  <div class="p20">
+    <div class="card">
+      <div class="icon-circle" id="ms-icon">💡</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px" id="ms-title"></h2>
+      <p class="text-sm" id="ms-desc"></p>
+    </div>
+    <div style="font-size:15px;font-weight:700;color:#1a2a3a;margin-bottom:10px">練習テーマ</div>
+    <div class="card" style="padding:16px">
+      <textarea id="theme-input" class="input-box" style="width:100%;border:none;background:transparent;min-height:80px" placeholder="最初に、深掘りしたいテーマを一言で教えてください。"></textarea>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:#1a2a3a;margin-bottom:10px">もしテーマがなければ、今日はこういうのはどう？</div>
+    <div id="suggestions"></div>
+  </div>
+  <div class="sticky-footer">
+    <button class="btn-full" id="start-btn" onclick="startSession()">練習を始める</button>
+  </div>
+</div>
+
+<!-- ===== SESSION ===== -->
+<div id="screen-session" class="screen-flex">
+  <div class="session-header">
+    <div class="session-title-row">
+      <div>
+        <button class="back-btn" style="margin-bottom:4px" onclick="resetAll()">戻る</button>
+        <div style="font-size:16px;font-weight:800;color:#1a2a3a" id="session-title"></div>
+        <div class="text-gray" id="session-theme"></div>
+      </div>
+      <div class="step-badge" id="step-badge">1/5</div>
+    </div>
+  </div>
+  <div class="messages" id="messages"></div>
+  <div class="input-area">
+    <div class="input-row">
+      <textarea class="input-box" id="msg-input" placeholder="考えを入力…" rows="1"
+        oninput="autoResize(this)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">✈</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="screen-result" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="resetAll()">戻る</button>
+  </div>
+  <div class="p20">
+    <div class="card">
+      <div class="text-blue mb8" id="r-mode"></div>
+      <div style="font-size:18px;font-weight:800;color:#1a2a3a;margin-bottom:6px" id="r-theme"></div>
+      <div class="text-gray mb16" id="r-date"></div>
+      <div class="score" id="r-score"></div>
+      <p class="text-body" id="r-summary"></p>
+    </div>
+    <div id="r-phrases-section">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#1a2a3a">言い回し例</div>
+      <div id="r-phrases"></div>
+    </div>
+    <div class="insight-card" id="r-insight-card">
+      <div class="text-blue mb8">今回の気づき</div>
+      <p style="font-size:13px;color:#1a2a3a;line-height:1.7;margin:0" id="r-insight"></p>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#1a2a3a">対話ログ</div>
+    <div class="card" style="padding:12px 16px">
+      <div id="r-log"></div>
+    </div>
+    <button class="btn-full mt16" onclick="retrySession()">同じテーマでもう一度</button>
+    <button class="btn-outline" onclick="resetAll()">ホームへ戻る</button>
+    <div style="height:40px"></div>
+  </div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div id="screen-history" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('home')">戻る</button>
+    <h1 class="h1">履歴</h1>
+  </div>
+  <div class="p20" id="history-list"></div>
+  <div class="pb80"></div>
+  <div class="nav">
+    <button class="nav-btn" onclick="showScreen('home')"><span class="nav-icon">🏠</span>ホーム</button>
+    <button class="nav-btn active"><span class="nav-icon">🕐</span>履歴</button>
+  </div>
+</div>
+
+<script>
+const MODES = [
+  {
+    id: 'why', icon: '💡', title: '5回のWhy深掘り', badge: '約5分',
+    desc: 'AIが最大5回まで「なぜ？」を重ね、曖昧な思考を理由・背景・価値観まで掘り下げます。',
+    suggestions: ['なぜ最近やる気が出ないのか','なぜ人前で説明するのが苦手なのか','なぜ今の仕事を続けたいと思うのか','なぜ新しい挑戦に迷いがあるのか'],
+    systemPrompt: 'あなたは「言語化コーチ」です。ユーザーの発言に対して「なぜそう思うのか？」という核心を突く質問を1つだけ返してください。質問は短く温かく具体的に。評価や解説はしない。日本語で2〜3文以内で返答。',
+    finalPrompt: 'これまでの対話を踏まえて、ユーザーの考えの根っこにある価値観や本音を整理してください。必ず以下のJSON形式のみで返してください（マークダウン不要）：{"score":85,"summary":"言語化できたこと2〜3文","phrases":["言い回し例1","言い回し例2"],"insight":"今回見えてきた本質1文"}',
+  },
+  {
+    id: 'analogy', icon: '💬', title: '例え話', badge: '約4分',
+    desc: '難しい考えを身近な例えに変換し、相手に伝わりやすい言い回しへ整えます。',
+    suggestions: ['「信頼関係を築く」を例え話で説明したい','「自分のペースで進む大切さ」を伝えたい','「完璧を求めすぎない」を分かりやすく言いたい','「継続することの力」を例えで表現したい'],
+    systemPrompt: 'あなたは「比喩の達人」です。ユーザーが伝えたい概念を誰でも理解できる例え話に変えるサポートをします。どんな場面で伝えたいかを引き出す質問をしてください。日本語で温かく3文以内で返答。',
+    finalPrompt: '対話を踏まえて例え話をまとめてください。必ずJSON形式のみで：{"score":80,"summary":"今回練習したこと2文","phrases":["例え話1","例え話2"],"insight":"伝わりやすい理由1文"}',
+  },
+  {
+    id: 'concrete', icon: '📄', title: '抽象から具体', badge: '約4分',
+    desc: '抽象的な言葉を、場面・行動・具体例に分解して説明できる形にします。',
+    suggestions: ['「健康になりたい」を、今日できる具体的な行動に落とし込んでみましょう。','「部屋をきれいにしたい」を、今日できる具体的な行動に落とし込んでみましょう。','「新しいスキルを身につけたい」を、今日できる具体的な行動に落とし込んでみましょう。','「もっとリラックスしたい」を、今日できる具体的な行動に落とし込んでみましょう。'],
+    systemPrompt: 'あなたは「具体化コーチ」です。ユーザーの抽象的な目標を今日できる具体的な行動に落とし込むサポートをします。5W1Hを意識した質問で具体化を促してください。日本語で前向きに3文以内で返答。',
+    finalPrompt: '対話を踏まえてまとめてください。必ずJSON形式のみで：{"score":75,"summary":"言語化できたこと2文","phrases":["具体的な言い回し例1","具体的な言い回し例2"],"insight":"抽象を具体にするポイント1文"}',
+  },
+];
+
+let state = {
+  screen: 'home',
+  modeIndex: 0,
+  theme: '',
+  messages: [],
+  step: 0,
+  loading: false,
+  result: null,
+  history: [],
+};
+
+// Load history
+try {
+  const h = localStorage.getItem('gengouka-history');
+  if (h) state.history = JSON.parse(h);
+} catch(e) {}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen, .screen-flex').forEach(el => {
+    el.classList.remove('active');
+  });
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+  state.screen = name;
+}
+
+function goModeSelect(idx) {
+  state.modeIndex = idx;
+  const mode = MODES[idx];
+  document.getElementById('ms-icon').textContent = mode.icon;
+  document.getElementById('ms-title').textContent = mode.title;
+  document.getElementById('ms-desc').textContent = mode.desc;
+  document.getElementById('theme-input').value = '';
+  const sugsEl = document.getElementById('suggestions');
+  sugsEl.innerHTML = '';
+  mode.suggestions.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = s;
+    btn.onclick = () => { document.getElementById('theme-input').value = s; };
+    sugsEl.appendChild(btn);
+  });
+  showScreen('mode-select');
+}
+
+async function startSession() {
+  const theme = document.getElementById('theme-input').value.trim();
+  if (!theme) return;
+  state.theme = theme;
+  state.messages = [];
+  state.step = 1;
+
+  const mode = MODES[state.modeIndex];
+  document.getElementById('session-title').textContent = mode.title;
+  document.getElementById('session-theme').textContent = theme;
+  document.getElementById('step-badge').textContent = '1/5';
+  document.getElementById('messages').innerHTML = '';
+
+  showScreen('session');
+  setLoading(true);
+
+  try {
+    const reply = await callAPI(
+      [{ role: 'user', content: 'テーマ：' + theme }],
+      mode.systemPrompt
+    );
+    state.messages.push({ role: 'user', content: theme, hidden: true });
+    state.messages.push({ role: 'assistant', content: reply });
+    appendBubble('ai', reply);
+  } catch(e) {
+    appendBubble('ai', '⚠️ エラー: ' + e.message);
+  }
+  setLoading(false);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || state.loading) return;
+  input.value = '';
+  autoResize(input);
+
+  state.messages.push({ role: 'user', content: text });
+  appendBubble('user', text);
+
+  state.step++;
+  document.getElementById('step-badge').textContent = Math.min(state.step, 5) + '/5';
+
+  // Build API messages (no hidden, must alternate user/assistant)
+  const raw = state.messages
+    .filter(m => !m.hidden)
+    .map(m => ({ role: m.role, content: m.content }));
+  const apiMsgs = normalizeMessages(raw);
+
+  setLoading(true);
+  const mode = MODES[state.modeIndex];
+
+  try {
+    if (state.step >= 5) {
+      const finalReply = await callAPI(
+        [...apiMsgs, { role: 'user', content: 'まとめてください' }],
+        mode.finalPrompt
+      );
+      let parsed;
+      try {
+        parsed = JSON.parse(finalReply.replace(/```json|```/g, '').trim());
+      } catch {
+        parsed = { score: 70, summary: '練習完了！よく頑張りました。', phrases: [], insight: '' };
+      }
+      const entry = {
+        id: Date.now(),
+        date: new Date().toLocaleString('ja-JP'),
+        mode: mode.title,
+        theme: state.theme,
+        ...parsed,
+        log: state.messages.filter(m => !m.hidden),
+      };
+      try {
+        state.history = [entry, ...state.history];
+        localStorage.setItem('gengouka-history', JSON.stringify(state.history));
+      } catch(e) {}
+      state.result = entry;
+      showResult(entry);
+    } else {
+      const reply = await callAPI(apiMsgs, mode.systemPrompt);
+      state.messages.push({ role: 'assistant', content: reply });
+      appendBubble('ai', reply);
+    }
+  } catch(e) {
+    appendBubble('ai', '⚠️ エラー: ' + e.message);
+  }
+  setLoading(false);
+}
+
+function normalizeMessages(msgs) {
+  const result = msgs.reduce((acc, msg) => {
+    if (acc.length > 0 && acc[acc.length-1].role === msg.role) {
+      acc[acc.length-1].content += '\n' + msg.content;
+    } else {
+      acc.push({...msg});
+    }
+    return acc;
+  }, []);
+  if (result.length > 0 && result[0].role === 'assistant') result.shift();
+  return result;
+}
+
+async function callAPI(messages, systemPrompt) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, systemPrompt }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.text;
+}
+
+function appendBubble(role, text) {
+  const messages = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = role === 'user' ? 'msg-row-user' : 'msg-row-ai';
+  const bubble = document.createElement('div');
+  bubble.className = role === 'user' ? 'bubble-user' : 'bubble-ai';
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function setLoading(val) {
+  state.loading = val;
+  const sendBtn = document.getElementById('send-btn');
+  const msgInput = document.getElementById('msg-input');
+  const loadingEl = document.getElementById('loading-bubble');
+
+  if (val) {
+    sendBtn.disabled = true;
+    msgInput.disabled = true;
+    const row = document.createElement('div');
+    row.className = 'msg-row-ai';
+    row.id = 'loading-bubble';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble-ai bubble-loading';
+    bubble.textContent = '考え中…';
+    row.appendChild(bubble);
+    document.getElementById('messages').appendChild(row);
+    document.getElementById('messages').scrollTop = 999999;
+  } else {
+    sendBtn.disabled = false;
+    msgInput.disabled = false;
+    const lb = document.getElementById('loading-bubble');
+    if (lb) lb.remove();
+  }
+}
+
+function showResult(entry) {
+  document.getElementById('r-mode').textContent = entry.mode;
+  document.getElementById('r-theme').textContent = entry.theme;
+  document.getElementById('r-date').textContent = entry.date;
+  document.getElementById('r-score').textContent = entry.score + ' 点';
+  document.getElementById('r-summary').textContent = entry.summary;
+
+  const phrasesEl = document.getElementById('r-phrases');
+  phrasesEl.innerHTML = '';
+  if (entry.phrases && entry.phrases.length > 0) {
+    document.getElementById('r-phrases-section').style.display = 'block';
+    entry.phrases.forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'phrase-card';
+      d.textContent = '「' + p + '」';
+      phrasesEl.appendChild(d);
+    });
+  } else {
+    document.getElementById('r-phrases-section').style.display = 'none';
+  }
+
+  if (entry.insight) {
+    document.getElementById('r-insight-card').style.display = 'block';
+    document.getElementById('r-insight').textContent = entry.insight;
+  } else {
+    document.getElementById('r-insight-card').style.display = 'none';
+  }
+
+  const logEl = document.getElementById('r-log');
+  logEl.innerHTML = '';
+  (entry.log || []).forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'log-entry ' + m.role;
+    d.innerHTML = '<span class="log-name">' + (m.role === 'user' ? 'あなた' : 'AI') + '：</span>' + m.content;
+    logEl.appendChild(d);
+  });
+
+  showScreen('result');
+}
+
+function retrySession() {
+  document.getElementById('theme-input').value = state.theme;
+  goModeSelect(state.modeIndex);
+}
+
+function resetAll() {
+  state.messages = [];
+  state.step = 0;
+  state.loading = false;
+  state.result = null;
+  state.theme = '';
+  showScreen('home');
+}
+
+function showHistory() {
+  const el = document.getElementById('history-list');
+  el.innerHTML = '';
+  if (state.history.length === 0) {
+    el.innerHTML = '<div class="empty-msg">まだ練習履歴がありません</div>';
+    return;
+  }
+  state.history.forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'history-card';
+    card.innerHTML = `
+      <div class="text-blue mb8">${entry.mode}</div>
+      <div style="font-size:15px;font-weight:700;color:#1a2a3a;margin-bottom:4px">${entry.theme}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="text-gray">${entry.date}</div>
+        <div style="font-size:20px;font-weight:800;color:#3aa8e8">${entry.score}点</div>
+      </div>`;
+    card.onclick = () => showResult(entry);
+    el.appendChild(card);
+  });
+}
+
+// Override showScreen to handle history rendering
+const _showScreen = showScreen;
+window.showScreen = function(name) {
+  _showScreen(name);
+  if (name === 'history') showHistory();
+};
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+</body>
+</html>
