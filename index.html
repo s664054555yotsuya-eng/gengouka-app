@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>言語化トレーニング</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  /* Blue (primary) */
+  --s50:#F0F5FF;--s100:#E0EBFF;--s200:#C0D4FE;--s300:#94B3FC;
+  --s400:#6B93F9;--s500:#4A7CF7;--s600:#3060D8;--s700:#2248B0;--s800:#1A3888;--s900:#102060;
+  /* Warm neutrals */
+  --g50:#FFF8F0;--g100:#F5EDE0;--g200:#E8DDD0;--g400:#A89880;--g600:#6B5B4E;--g800:#2D2018;
+  --white:#FFFFFF;
+  /* Orange accent */
+  --orn:#FFA500;--orn-lt:#FFF3E0;--orn-dk:#CC8400;
+  /* Shadow */
+  --sh:0 2px 16px rgba(74,124,247,.10);
+}
+
+html{overflow:hidden;width:100%;height:100%;}
+body{
+  font-family:'Noto Sans JP',sans-serif;
+  background:#FFF8F0;
+  position:fixed;top:0;left:0;
+  width:100%;height:100%;
+  overflow:hidden;
+  display:flex;justify-content:center;align-items:center;
+}
+/* Floating blobs */
+body::before{content:'';position:fixed;top:-120px;right:-80px;width:360px;height:360px;border-radius:50%;
+  background:radial-gradient(circle,rgba(74,124,247,.13) 0%,transparent 65%);pointer-events:none;}
+body::after{content:'';position:fixed;bottom:-100px;left:-80px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,165,0,.13) 0%,transparent 65%);pointer-events:none;}
+
+#app{width:390px;height:844px;background:#FFF8F0;border-radius:44px;overflow:hidden;
+  position:relative;z-index:1;
+  box-shadow:0 0 0 2px var(--s200),0 24px 64px rgba(74,124,247,.14),0 48px 96px rgba(0,0,0,.10);}
+@media(max-width:420px){
+  body{align-items:stretch;}
+  #app{width:100%;height:100%;border-radius:0;box-shadow:none;}
+}
+
+/* screens */
+.sc{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;background:#FFF8F0;}
+.sc.active{display:flex;}
+
+/* header */
+.hd{background:var(--white);border-bottom:2px solid var(--g200);padding:14px 16px;
+  display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hd-title{font-size:17px;font-weight:900;color:var(--g800);flex:1;letter-spacing:-.3px;}
+.icon-btn{width:38px;height:38px;border:none;border-radius:50%;background:var(--s50);
+  color:var(--s600);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.icon-btn:active{background:var(--s500);color:#fff;}
+
+/* scroll */
+.sv{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.sv::-webkit-scrollbar{display:none;}
+
+/* cards */
+.card{background:var(--white);border-radius:22px;padding:18px;
+  box-shadow:var(--sh);border:2px solid var(--g200);}
+
+/* buttons */
+.btn{display:block;width:100%;padding:16px;border:none;border-radius:50px;
+  font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;text-align:center;transition:all .15s;}
+.btn-p{background:var(--s500);color:#fff;}
+.btn-p:active{background:var(--s600);transform:scale(.97);}
+.btn-s{background:var(--white);color:var(--s600);border:2px solid var(--s200);}
+.btn-s:active{background:var(--s50);}
+.btn-g{background:none;border:none;color:var(--g400);font-family:'Noto Sans JP',sans-serif;
+  font-size:14px;font-weight:500;cursor:pointer;padding:8px;}
+
+/* input */
+.inp{width:100%;padding:13px 18px;border:2px solid var(--g200);border-radius:50px;
+  font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--g800);
+  background:var(--white);outline:none;transition:border-color .2s;}
+.inp:focus{border-color:var(--s500);}
+select.inp{border-radius:16px;}
+
+/* toast */
+#toast{position:absolute;top:80px;left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:var(--g800);color:#fff;padding:10px 22px;border-radius:50px;
+  font-size:13px;font-weight:600;white-space:nowrap;
+  opacity:0;transition:all .3s;z-index:999;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── HOME ── */
+.daily-card{margin:16px;
+  background:linear-gradient(135deg,var(--s500) 0%,#7AA8FF 100%);
+  border-radius:28px;padding:22px;color:#fff;
+  box-shadow:0 8px 32px rgba(74,124,247,.38);position:relative;overflow:hidden;}
+.daily-card::before{content:'';position:absolute;top:-50px;right:-40px;
+  width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.10);}
+.daily-card::after{content:'';position:absolute;bottom:-20px;left:16px;
+  width:70px;height:70px;border:10px solid rgba(255,255,255,.10);
+  border-radius:50%;transform:rotate(20deg);}
+.daily-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.22);
+  padding:5px 14px;border-radius:50px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:12px;}
+.daily-text{font-size:16px;font-weight:700;line-height:1.7;position:relative;z-index:1;}
+.daily-date{font-size:11px;opacity:.72;margin-top:10px;}
+
+.sec-lbl{font-size:11px;font-weight:800;color:var(--g400);
+  padding:4px 16px 10px;letter-spacing:1px;}
+
+.mode-card{margin:0 16px 12px;background:var(--white);border:2px solid var(--g200);
+  border-radius:26px;padding:18px;cursor:pointer;
+  display:flex;align-items:center;gap:16px;
+  box-shadow:var(--sh);transition:all .15s;}
+.mode-card:active{transform:scale(.97);box-shadow:none;border-color:var(--s300);}
+.mode-icon{width:58px;height:58px;border-radius:20px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+.ic-why{background:var(--orn-lt);} .ic-ana{background:var(--s50);}
+.mode-info{flex:1;}
+.mode-name{font-size:15px;font-weight:800;color:var(--g800);margin-bottom:4px;}
+.mode-desc{font-size:11px;color:var(--g400);line-height:1.6;}
+.mode-arr{color:var(--g200);font-size:24px;}
+
+.no-key{margin:0 16px 14px;background:var(--orn-lt);border:2px solid var(--orn);
+  border-radius:20px;padding:16px;display:flex;gap:10px;align-items:center;cursor:pointer;}
+.no-key.hidden{display:none;}
+
+/* ── MODE SETUP ── */
+.setup-banner{margin:16px;border-radius:22px;padding:20px;display:flex;gap:16px;align-items:flex-start;}
+.setup-icon{font-size:32px;flex-shrink:0;}
+.setup-title{font-size:18px;font-weight:800;color:var(--g800);margin-bottom:5px;}
+.setup-desc{font-size:12px;color:var(--g600);line-height:1.65;}
+
+.setup-sec{padding:0 16px 14px;}
+.setup-lbl{font-size:12px;font-weight:700;color:var(--s600);margin-bottom:10px;letter-spacing:.3px;}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.chip{padding:8px 16px;background:var(--white);border:2px solid var(--g200);
+  border-radius:50px;font-size:12px;font-weight:600;color:var(--g600);
+  cursor:pointer;transition:all .15s;font-family:'Noto Sans JP',sans-serif;}
+.chip.sel,.chip:active{background:var(--s500);border-color:var(--s500);color:#fff;}
+
+/* ── PRACTICE ── */
+.prac-meta{background:var(--white);border-bottom:2px solid var(--g200);
+  padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:10px;}
+.mode-badge{padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;}
+.theme-lbl{font-size:13px;font-weight:600;color:var(--g800);
+  flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.why-dots{display:flex;gap:6px;flex-shrink:0;}
+.why-dot{width:9px;height:9px;border-radius:50%;background:var(--g200);transition:background .3s;}
+.why-dot.done{background:var(--orn);}
+
+.chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat::-webkit-scrollbar{display:none;}
+
+.bw{display:flex;flex-direction:column;max-width:85%;}
+.bw.user{align-self:flex-end;align-items:flex-end;}
+.bw.ai{align-self:flex-start;align-items:flex-start;}
+.bsender{font-size:11px;color:var(--g400);margin-bottom:4px;font-weight:600;}
+.bubble{padding:12px 16px;border-radius:22px;font-size:14px;line-height:1.75;white-space:pre-wrap;}
+.bubble.user{background:var(--s500);color:#fff;border-radius:22px 22px 6px 22px;}
+.bubble.ai{background:var(--white);color:var(--g800);border:2px solid var(--g200);
+  border-radius:22px 22px 22px 6px;box-shadow:var(--sh);}
+
+.typing{display:flex;gap:5px;align-items:center;padding:14px 16px;
+  background:var(--white);border-radius:22px 22px 22px 6px;
+  border:2px solid var(--g200);width:fit-content;}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--s400);animation:td 1.2s infinite;}
+.tdot:nth-child(2){animation-delay:.2s;}.tdot:nth-child(3){animation-delay:.4s;}
+@keyframes td{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-7px);opacity:1;}}
+
+.input-area{background:var(--white);border-top:2px solid var(--g200);
+  padding:12px 16px;flex-shrink:0;display:flex;gap:10px;align-items:flex-end;}
+.ptxt{flex:1;padding:12px 16px;border:2px solid var(--g200);border-radius:26px;
+  font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--g800);
+  background:#FFF8F0;outline:none;resize:none;max-height:100px;min-height:44px;
+  line-height:1.5;transition:border-color .2s;}
+.ptxt:focus{border-color:var(--s500);background:var(--white);}
+.send{width:44px;height:44px;border-radius:50%;background:var(--s500);
+  border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.send:active{background:var(--s600);}
+.send:disabled{background:var(--g200);cursor:not-allowed;}
+
+.done-bar{padding:12px 16px;flex-shrink:0;background:var(--white);border-top:2px solid var(--g200);}
+.continue-bar{padding:14px 16px;flex-shrink:0;background:var(--orn-lt);border-top:2px solid var(--orn);}
+
+/* ── RESULT ── */
+.res-top{margin:16px;
+  background:linear-gradient(135deg,var(--s500) 0%,#7AA8FF 100%);
+  border-radius:28px;padding:26px;color:#fff;text-align:center;
+  box-shadow:0 8px 32px rgba(74,124,247,.32);}
+.res-grade{font-size:60px;font-weight:900;line-height:1;margin-bottom:6px;}
+.res-score{font-size:20px;font-weight:800;margin-bottom:4px;}
+.res-label{font-size:12px;opacity:.8;}
+
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px;}
+.sc-item{background:var(--white);border:2px solid var(--g200);border-radius:20px;padding:14px;}
+.sc-lbl{font-size:11px;color:var(--g400);font-weight:600;margin-bottom:8px;}
+.sc-bar{height:6px;background:var(--g200);border-radius:3px;margin-bottom:8px;overflow:hidden;}
+.sc-fill{height:100%;background:var(--s500);border-radius:3px;width:0;transition:width 1s ease;}
+.sc-val{font-size:20px;font-weight:900;color:var(--s600);}
+.sc-max{font-size:11px;color:var(--g400);}
+
+.res-sec{margin:0 16px 14px;}
+.res-sec-lbl{font-size:11px;font-weight:800;color:var(--orn-dk);margin-bottom:8px;letter-spacing:.5px;}
+.res-box{background:var(--white);border:2px solid var(--g200);border-radius:20px;
+  padding:16px;font-size:14px;color:var(--g800);line-height:1.8;}
+.highlight-box{background:var(--orn-lt);border-left:4px solid var(--orn);
+  border-radius:0 14px 14px 0;padding:12px 16px;
+  font-size:13px;color:#7A5000;font-style:italic;line-height:1.65;margin-top:10px;}
+
+/* ── HISTORY ── */
+.hist-item{margin:0 16px 12px;background:var(--white);border:2px solid var(--g200);
+  border-radius:22px;padding:16px;cursor:pointer;transition:all .15s;}
+.hist-item:active{transform:scale(.98);}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.hist-date{font-size:12px;color:var(--g400);font-weight:500;}
+.hist-badge{padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;}
+.hist-theme{font-size:14px;font-weight:700;color:var(--g800);margin-bottom:3px;}
+.hist-mode{font-size:12px;color:var(--s600);font-weight:600;}
+.hist-detail{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.hist-detail.open{max-height:1200px;}
+.hist-detail-inner{margin-top:14px;padding-top:14px;border-top:2px solid var(--g200);
+  display:flex;flex-direction:column;gap:10px;}
+.hist-sec-lbl{font-size:11px;font-weight:700;color:var(--g400);letter-spacing:.05em;
+  text-transform:uppercase;margin-bottom:5px;}
+.hist-highlight-box{background:var(--orn-lt);border-left:4px solid var(--orn);
+  border-radius:0 14px 14px 0;padding:11px 14px;font-size:13px;color:#7A5000;
+  font-style:italic;line-height:1.65;}
+.hist-result-summary{padding:12px;background:var(--g50);
+  border-radius:14px;font-size:13px;color:var(--g600);line-height:1.7;}
+.hist-better{padding:12px;background:var(--s50);
+  border-radius:14px;font-size:13px;color:var(--s700);line-height:1.7;}
+
+/* grade colors */
+.gs{color:var(--orn);} .ga{color:#22C55E;} .gb{color:var(--s500);} .gc{color:var(--g400);}
+.bs-s{background:var(--orn-lt);color:var(--orn-dk);}
+.bs-a{background:#DCFCE7;color:#15803D;}
+.bs-b{background:var(--s100);color:var(--s700);}
+.bs-c{background:var(--g100);color:var(--g600);}
+
+/* ── SETTINGS MODAL ── */
+.overlay{position:absolute;inset:0;background:rgba(20,10,0,.35);
+  z-index:500;display:none;align-items:flex-end;backdrop-filter:blur(6px);}
+.overlay.open{display:flex;}
+.sheet{width:100%;background:var(--white);border-radius:32px 32px 0 0;
+  padding:22px;animation:su .3s ease;}
+@keyframes su{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.handle{width:40px;height:5px;background:var(--g200);border-radius:3px;margin:0 auto 20px;}
+.sheet-title{font-size:18px;font-weight:900;color:var(--g800);margin-bottom:18px;}
+.fg{margin-bottom:16px;}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;}
+.hint{font-size:11px;color:var(--g400);margin-top:5px;line-height:1.5;}
+.key-wrap{position:relative;}
+.key-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--g400);font-size:15px;padding:4px;}
+
+/* empty state */
+.empty{text-align:center;padding:70px 20px;}
+.empty-icon{font-size:56px;margin-bottom:16px;}
+.empty-title{font-size:17px;font-weight:800;color:var(--g600);margin-bottom:8px;}
+.empty-sub{font-size:13px;color:var(--g400);}
+
+/* ── MODE TABS ── */
+.mode-tabs{display:flex;gap:8px;margin:12px 16px 4px;flex-shrink:0;}
+.mode-tab{flex:1;padding:11px 8px;border:2px solid var(--g200);border-radius:20px;
+  font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;
+  background:var(--white);color:var(--g600);cursor:pointer;transition:all .15s;}
+.mode-tab.active.tab-why5{background:var(--orn-lt);border-color:var(--orn);color:var(--orn-dk);}
+
+/* ── PROFESSION ── */
+.prof-card{background:var(--white);border:2px solid var(--g200);border-radius:24px;
+  padding:18px;cursor:pointer;display:flex;align-items:center;gap:16px;
+  box-shadow:var(--sh);transition:all .15s;}
+.prof-card:active{transform:scale(.97);border-color:var(--s400);}
+.prof-icon{width:52px;height:52px;border-radius:18px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:24px;}
+.prof-name{font-size:15px;font-weight:800;color:var(--g800);margin-bottom:3px;}
+.prof-desc{font-size:11px;color:var(--g400);line-height:1.4;}
+
+/* ── ONBOARDING ── */
+@keyframes fadeBlurIn {
+  from{opacity:0;filter:blur(10px);transform:translateY(8px);}
+  to  {opacity:1;filter:blur(0);transform:translateY(0);}
+}
+.onb-title{animation:fadeBlurIn 1.8s ease-out forwards;}
+.onb-sub  {opacity:0;animation:fadeBlurIn 1.4s ease-out 0.6s forwards;}
+.onb-form {opacity:0;animation:fadeBlurIn 1s ease-out 1.1s forwards;}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="toast"></div>
+
+<!-- ══ HOME ══ -->
+<div class="sc active" id="sc-home">
+  <div class="hd">
+    <div class="hd-title">解像度トレーニング</div>
+    <button class="icon-btn" onclick="openHistory()" title="履歴">📋</button>
+    <button class="icon-btn" onclick="openSettings()" title="設定">⚙️</button>
+  </div>
+  <div class="sv" style="padding-bottom:20px;">
+    <div id="session-banner" style="margin:12px 14px 0;display:flex;align-items:center;justify-content:space-between;
+      background:var(--white);border:1px solid var(--s100);border-radius:12px;padding:10px 14px;">
+      <span style="font-size:13px;font-weight:500;color:var(--g600);">利用回数</span>
+      <span id="session-count" style="font-size:14px;font-weight:700;color:var(--s700);"></span>
+    </div>
+    <div style="padding:16px 16px 0;">
+      <div style="font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;letter-spacing:.3px;">✍️ テーマを入力して練習を始める</div>
+      <input class="inp" id="home-theme-inp" type="text"
+        placeholder="例：なぜこの仕事を選んだのか"
+        style="margin-bottom:10px;"
+        onkeydown="if(event.key==='Enter')startFromHome()">
+      <button class="btn btn-p" onclick="startFromHome()">練習を始める →</button>
+    </div>
+    <div style="text-align:center;padding:12px 0;color:var(--g400);font-size:12px;">── または ──</div>
+    <div class="daily-card" style="margin:0 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="daily-badge">📅 今日の課題</div>
+        <button id="daily-refresh-btn" onclick="refreshDaily()" style="background:rgba(255,255,255,.22);border:none;border-radius:20px;padding:4px 11px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🔄 更新</button>
+      </div>
+      <div class="daily-text" id="daily-text"> </div>
+      <div class="daily-date" id="daily-date"></div>
+      <div style="margin-top:14px;">
+        <button onclick="openDailyMode()" style="width:100%;padding:9px 4px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.35);border-radius:10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🔍 このテーマで練習する</button>
+      </div>
+    </div>
+    <div style="margin:16px;background:var(--white);border:2px solid var(--g200);border-radius:22px;padding:18px;">
+      <div style="font-size:13px;font-weight:800;color:var(--orn-dk);margin-bottom:10px;">🔍 解像度トレーニングとは？</div>
+      <p style="font-size:13px;color:var(--g600);line-height:1.75;margin:0;">「なぜ？」を繰り返し問いかけることで、モヤモヤした考えの<strong>本質</strong>を言葉にする練習です。<br><br>最初は3回で終了。「もう少し深掘りしたい」と感じたら、さらに最大5回まで続けられます。</p>
+    </div>
+    <div style="text-align:center;padding:0 16px 16px;">
+      <button class="btn-g" onclick="openHistory()">📋 過去の練習を見る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ONBOARDING ══ -->
+<div class="sc" id="sc-onboarding">
+  <div class="sv" style="padding-bottom:40px;">
+    <div style="padding:56px 24px 32px;text-align:center;background:linear-gradient(160deg,var(--s600) 0%,var(--s800) 100%);color:#fff;min-height:220px;display:flex;flex-direction:column;justify-content:flex-end;">
+      <div class="onb-title" style="font-size:28px;font-weight:900;line-height:1.2;margin-bottom:10px;">解像度トレーニング</div>
+      <div class="onb-sub" style="font-size:14px;opacity:.85;line-height:1.7;">言いたいことの本質を、<br>「なぜ？」から見つけ出す。</div>
+    </div>
+    <div class="onb-form" style="padding:24px 16px 0;">
+      <div style="font-size:15px;font-weight:800;color:var(--g800);margin-bottom:18px;text-align:center;">まず、あなたのことを教えてください</div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;">職業 <span style="color:#E53E3E;">*</span></label>
+        <div class="chips" style="margin-bottom:8px;">
+          <button class="chip" onclick="setProfInput('美容師')">✂️ 美容師</button>
+          <button class="chip" onclick="setProfInput('営業職')">💼 営業職</button>
+          <button class="chip" onclick="setProfInput('介護士')">🧡 介護士</button>
+          <button class="chip" onclick="setProfInput('看護師')">🏥 看護師</button>
+          <button class="chip" onclick="setProfInput('エンジニア')">💻 エンジニア</button>
+          <button class="chip" onclick="setProfInput('教師・講師')">📖 教師・講師</button>
+          <button class="chip" onclick="setProfInput('学生')">📚 学生</button>
+        </div>
+        <input class="inp" id="onb-prof" type="text" placeholder="例：美容師、営業、学生…"
+          onkeydown="if(event.key==='Enter')document.getElementById('onb-age').focus()">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;">年齢（任意）</label>
+        <input class="inp" id="onb-age" type="text" placeholder="例：28" style="width:120px;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;">一番モヤモヤしやすいのは？（1つ選択）</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="moya-main-chips">
+          <button class="chip" data-val="仕事" onclick="selectMainMoya(this)">💼 仕事</button>
+          <button class="chip" data-val="恋愛・パートナー" onclick="selectMainMoya(this)">💕 恋愛・パートナー</button>
+          <button class="chip" data-val="人間関係" onclick="selectMainMoya(this)">👥 人間関係</button>
+          <button class="chip" data-val="自己管理" onclick="selectMainMoya(this)">📋 自己管理</button>
+          <button class="chip" data-val="将来・キャリア" onclick="selectMainMoya(this)">🚀 将来・キャリア</button>
+        </div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--s600);margin-bottom:8px;">他にもあれば（複数選択可）</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="moya-sub-chips">
+          <button class="chip" data-val="家族・育児" onclick="toggleSubMoya(this)">👨‍👩‍👧 家族・育児</button>
+          <button class="chip" data-val="健康・身体" onclick="toggleSubMoya(this)">💪 健康・身体</button>
+          <button class="chip" data-val="お金・生活" onclick="toggleSubMoya(this)">💴 お金・生活</button>
+          <button class="chip" data-val="仕事" onclick="toggleSubMoya(this)">💼 仕事</button>
+          <button class="chip" data-val="恋愛" onclick="toggleSubMoya(this)">💕 恋愛</button>
+          <button class="chip" data-val="人間関係" onclick="toggleSubMoya(this)">👥 人間関係</button>
+          <button class="chip" data-val="自己管理" onclick="toggleSubMoya(this)">📋 自己管理</button>
+          <button class="chip" data-val="将来・キャリア" onclick="toggleSubMoya(this)">🚀 キャリア</button>
+        </div>
+      </div>
+      <button class="btn btn-p" onclick="submitProfile()">始める →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRACTICE ══ -->
+<div class="sc" id="sc-practice">
+  <div class="hd">
+    <button class="icon-btn" onclick="confirmEnd()">✕</button>
+    <div class="hd-title" id="prac-title">練習中</div>
+  </div>
+  <div class="prac-meta">
+    <span class="mode-badge" id="prac-badge"></span>
+    <span class="theme-lbl" id="prac-theme"></span>
+    <div class="why-dots" id="why-dots" style="display:none;"></div>
+  </div>
+  <div class="chat" id="chat"></div>
+  <div class="continue-bar" id="continue-bar" style="display:none;">
+    <p style="font-size:13px;color:var(--g600);margin-bottom:10px;text-align:center;">3つの「なぜ」を掘り下げました。さらに続けますか？</p>
+    <button class="btn btn-p" onclick="extendSession()" style="margin-bottom:8px;">さらに深掘りする（あと2回）→</button>
+    <button class="btn btn-s" onclick="endAtThree()">ここで終わって採点する</button>
+  </div>
+  <div class="done-bar" id="done-bar" style="display:none;">
+    <button class="btn btn-p" onclick="finishPractice()" style="background:var(--s700);">
+      ✓ 練習を完了して採点してもらう
+    </button>
+  </div>
+  <div class="input-area" id="input-area">
+    <textarea class="ptxt" id="msg-inp" rows="1" placeholder="回答を入力…"
+      oninput="autoResize(this)" onkeydown="onKey(event)"></textarea>
+    <button class="send" id="send-btn" onclick="sendMsg()">↑</button>
+  </div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="sc" id="sc-result">
+  <div class="hd"><div class="hd-title">練習結果</div></div>
+  <div class="sv" style="padding-bottom:24px;">
+    <div class="res-top">
+      <div class="res-grade" id="r-grade">…</div>
+      <div class="res-score" id="r-score">採点中</div>
+      <div class="res-label" id="r-label"></div>
+    </div>
+    <div class="score-grid" id="score-grid"></div>
+    <div class="res-sec" id="r-hl-sec" style="display:none;">
+      <div class="res-sec-lbl">🌟 光った一言</div>
+      <div class="highlight-box" id="r-hl"></div>
+    </div>
+    <div class="res-sec">
+      <div class="res-sec-lbl">💬 AIからのアドバイス</div>
+      <div class="res-box" id="r-advice">採点中です…</div>
+    </div>
+    <div class="res-sec">
+      <div class="res-sec-lbl">✨ もっと上手い言い回し</div>
+      <div class="res-box" id="r-phrase"></div>
+    </div>
+    <div style="padding:4px 14px;">
+      <button class="btn btn-s" onclick="goHome()">ホームに戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div class="sc" id="sc-history">
+  <div class="hd">
+    <button class="icon-btn" onclick="goHome()">←</button>
+    <div class="hd-title">練習の履歴</div>
+  </div>
+  <div class="sv">
+    <div style="padding-top:12px;" id="hist-list"></div>
+    <div class="empty hidden" id="hist-empty">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">まだ練習記録がありません</div>
+      <div class="empty-sub">練習を完了すると自動的に保存されます</div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+</div>
+
+
+<!-- ══ LIMIT OVERLAY ══ -->
+<div class="overlay" id="limit-overlay" style="align-items:center;justify-content:center;z-index:600;">
+  <div style="background:#fff;border-radius:24px;padding:32px 24px;margin:24px;text-align:center;
+    box-shadow:0 8px 40px rgba(0,0,0,.2);max-width:340px;width:100%;position:relative;">
+    <button onclick="closeLimitOverlay()" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;color:var(--g400);cursor:pointer;line-height:1;">✕</button>
+    <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+    <div style="font-size:20px;font-weight:700;color:var(--g800);margin-bottom:10px;">テスト期間が終了しました</div>
+    <div style="font-size:14px;color:var(--g600);line-height:1.7;margin-bottom:20px;">
+      このブラウザでの無料トライアル（20セッション）が終了しました。<br>
+      引き続きご利用の場合はご連絡ください。
+    </div>
+    <div style="background:var(--s50);border-radius:12px;padding:12px;font-size:13px;color:var(--s700);margin-bottom:16px;">
+      利用済み：<strong id="limit-used">20 / 20</strong> セッション
+    </div>
+    <button onclick="resetSessions()" style="width:100%;padding:12px;background:none;border:2px solid var(--s200);border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;color:var(--s600);cursor:pointer;">
+      🔄 利用回数をリセット
+    </button>
+  </div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="overlay" id="settings-overlay" onclick="maybeCloseSettings(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="handle"></div>
+    <div class="sheet-title">⚙️ 設定</div>
+    <div class="fg">
+      <label class="fl">職業</label>
+      <button onclick="changeProfession()" class="btn btn-s" style="font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span id="settings-prof-lbl">職業を選択</span> を変更する →
+      </button>
+    </div>
+    <div class="fg">
+      <label class="fl">使用モデル</label>
+      <select class="inp" id="model-sel" style="cursor:pointer;appearance:auto;">
+        <option value="claude-haiku-4-5-20251001">Claude Haiku（高速）</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet（高品質）</option>
+      </select>
+    </div>
+    <button class="btn btn-p" onclick="saveSettings()" style="margin-bottom:10px;">保存する</button>
+    <button class="btn-g" onclick="closeSettings()" style="width:100%;text-align:center;">キャンセル</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+<script>
+// ══════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════
+const MODES = {
+  why5: { name:'解像度トレーニング', icon:'🔍', badge:'解像度', bc:'#FEF3C7', btc:'#92400E', bg:'#FFFBEB' },
+};
+const MODE_DESC = {
+  why5: '「なぜ？」を5回重ねることで思考の本質にたどり着く練習です。答えに詰まるところが、あなたの思考の盲点です。',
+};
+const DAILY = [
+  '自分の「強み」を、具体的な行動で3つ説明してみよう',
+  '最近感動したことを、その理由とともに言葉にしてみよう',
+  '「働くとは何か」を、今の自分の言葉で定義してみよう',
+  '苦手なことを「なぜ苦手か」まで掘り下げてみよう',
+  '今日やる気が出た（出なかった）理由を言語化してみよう',
+  '「プロフェッショナル」とはどういう人か、例え話で説明してみよう',
+  '失敗した経験から何を学んだか、具体的に説明してみよう',
+  '自分の仕事の「やりがい」を言葉にしてみよう',
+  '「信頼される人」の特徴を、具体的な場面で説明してみよう',
+  '最近気になったニュースを、自分の言葉で誰かに説明してみよう',
+  '「チームワーク」を、料理に例えて説明してみよう',
+  '自分が大切にしている価値観を一言で表してみよう',
+  '「継続する力」を養うために自分がしていることを説明してみよう',
+  '最近の悩みを、「なぜ悩んでいるのか」まで掘り下げてみよう',
+  '「成長している」と感じるのはどんな瞬間か、具体的に説明してみよう',
+  '自分の仕事の「価値」を、お客様目線で言語化してみよう',
+  '「休む」ことの大切さを、論理的に説明してみよう',
+  '最近うまくいったことを、成功要因とともに言葉にしてみよう',
+  '「コミュニケーション」とは何か、子どもにわかるように説明してみよう',
+  '今の自分のキャリアの「目標」を具体的に言語化してみよう',
+  '「感謝」を言葉で伝えることの意味を考えてみよう',
+  '自分の「こだわり」を、なぜそれにこだわるかまで説明してみよう',
+  '「良い習慣」を一つ選び、なぜそれが良いか説明してみよう',
+  '最近の学びを、具体的な行動変容で表してみよう',
+  '自分が「楽しい」と感じる瞬間を、5W1Hで説明してみよう',
+  '「リーダーシップ」を、スポーツに例えて説明してみよう',
+  '職場の課題を一つ挙げて、その原因を深掘りしてみよう',
+  '「時間を大切にする」とはどういうことか、具体的に説明してみよう',
+  '「良い質問」と「悪い質問」の違いを説明してみよう',
+  '自分の「理想の1日」を、時間軸で具体的に描いてみよう',
+];
+
+const SYS = {
+  why5: t => `あなたは言語化トレーニングのコーチです。テーマ「${t}」について「なぜ？」を5回重ねる深掘りセッションを行います。
+
+【ルール】
+- テーマ「${t}」を常に軸として、そこから脱線しないようにしてください
+- ユーザーの発言の核心を1文で受け止め、必ず「なぜ〜なのですか？」という形でテーマに沿った深掘りをしてください
+- 毎回の冒頭に【WHY N/5】という形でステップ番号を付けてください（Nは1から5）
+- 返答は2〜3文以内に収めてください
+- ユーザーの言葉を引用しながら問いかけてください
+- 3回目（【WHY 3/5】）の深掘りをした後、必ず「3つの『なぜ』を掘り下げました。思考が少し深まりましたね。ここで一度立ち止まりましょう。さらに深掘りを続けますか？」と伝え、末尾に[PAUSE]を付けてください
+- [CONTINUE]を受け取った場合のみ、4回目（【WHY 4/5】）・5回目（【WHY 5/5】）を続けてください
+- 5回目（【WHY 5/5】）の深掘りをした後、必ず「5つの『なぜ』を掘り下げることができました。思考の核心に近づきましたね。お疲れ様でした。」と伝え、末尾に[COMPLETE]を付けてください
+- [CONTINUE]を受け取っていない場合は4回目以降を絶対に深掘りしないでください`,
+};
+
+function getEvalSys() {
+  const prof = S.profile?.profession || S.profession || '';
+  const profCtx = prof ? `\n対象者の職業：${prof}\nアドバイスは${prof}の実務に即した具体的な内容にすること。` : '';
+  return `あなたは言語化トレーニングの評価者です。セッション内容を採点してください。${profCtx}
+
+必ず以下のJSON形式のみで返してください（説明・コードブロック不要）：
+{"depth":0,"concreteness":0,"expression":0,"clarity":0,"total":0,"grade":"C","advice":"","betterPhrasing":"","highlight":""}
+
+【採点基準】バランスよく採点すること。誠実に練習に取り組んでいればBが取れる基準で評価する。
+
+depth（思考の深さ）各0〜25点：
+・25点：本質まで5段階以上掘り下げ、核心的な気づきに到達している
+・18〜24点：3〜4段階の深掘りがあり、表面的でない洞察がある
+・12〜17点：ある程度掘り下げているが、もう一歩踏み込めると良い
+・6〜11点：表面的な理由どまりで「なぜ」の追求が不十分
+・0〜5点：感想・結論のみで思考の過程がない
+
+concreteness（具体性）各0〜25点：
+・25点：数字・固有名詞・具体的な場面と行動が複数使われている
+・18〜24点：具体例がいくつか使われており伝わりやすい
+・12〜17点：ある程度具体的だが、もう少し具体例があると良い
+・6〜11点：曖昧な言葉が多く具体性が不十分
+・0〜5点：ほぼ完全に抽象的で具体的な内容がない
+
+expression（表現力）各0〜25点：
+・25点：比喩・構造化・多様な語彙を使い読み手を引きつける文章
+・18〜24点：普通以上の表現力で読みやすい
+・12〜17点：基本的な表現はできているが単調さが残る
+・6〜11点：平易な言葉のみで表現のバリエーションが乏しい
+・0〜5点：極めて単調で表現力がほぼない
+
+clarity（伝わりやすさ）各0〜25点：
+・25点：論理明快で話の流れが一貫しており完全に伝わる
+・18〜24点：おおむね伝わり論理的に整理されている
+・12〜17点：言いたいことはわかるが一部曖昧さがある
+・6〜11点：論理に飛躍があり伝わりにくい部分がある
+・0〜5点：話の筋が通っておらず何を言いたいかわからない
+
+grade（合計点で判定）：
+S=90点以上（プロレベル・即戦力の言語化力）
+A=75〜89点（高い言語化力・優れた回答）
+B=50〜74点（基本ができており成長が見られる回答）
+C=49点以下（より多くの練習で改善できる）
+
+【重要】誠実に練習に取り組んだ回答はB評価が適切。ある程度の掘り下げや具体例があればBを与えること。A評価は明らかに優れた回答のみ。S評価はプロレベルのみ。
+
+advice：職業・テーマに即した実践的な改善アドバイス（2〜3文、具体的に）
+betterPhrasing：ユーザーの発言をプロレベルに書き直した例（1〜2文）
+highlight：最も印象的なユーザーの発言を引用（なければ空文字）`;
+}
+
+// ══════════════════════════════
+//  STATE
+// ══════════════════════════════
+let S = {
+  model:       localStorage.getItem('llk_model') || 'claude-haiku-4-5-20251001',
+  profile:     null,
+  profession:  null,
+  mode:        'why5',
+  theme:       '',
+  msgs:        [],
+  disp:        [],
+  whyCount:    0,
+  maxWhy:      3,
+  extendCount: 0,
+  done:        false,
+  history:     [],
+  sessionsUsed: 0,
+};
+
+try { S.profile  = JSON.parse(localStorage.getItem('llk_profile') || 'null'); } catch(e){}
+S.profession = S.profile?.profession || localStorage.getItem('llk_profession') || null;
+try { S.history = JSON.parse(localStorage.getItem('llk_hist') || '[]'); } catch(e){}
+S.sessionsUsed = parseInt(localStorage.getItem('llk_sessions') || '0', 10);
+
+const SESSION_LIMIT = 20;
+let _chatAtBottom = true;
+
+// ══════════════════════════════
+//  API
+// ══════════════════════════════
+async function claude(sys, msgs) {
+  const r = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ model: S.model, max_tokens: 1024, system: sys, messages: msgs }),
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.error?.message || `APIエラー (${r.status})`);
+  }
+  const d = await r.json();
+  return d.content[0].text;
+}
+
+// ══════════════════════════════
+//  NAV
+// ══════════════════════════════
+function show(id) {
+  document.querySelectorAll('.sc').forEach(s => s.classList.remove('active'));
+  document.getElementById('sc-' + id).classList.add('active');
+}
+function goHome() { renderHome(); show('home'); }
+function openHistory() { renderHistory(); show('history'); }
+
+// ══════════════════════════════
+//  DAILY CHALLENGE
+// ══════════════════════════════
+function todayKey() {
+  const d = new Date();
+  return `llk_daily_${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+async function getDailyChallenge() {
+  const key = todayKey();
+  const cached = localStorage.getItem(key);
+  if (cached) return cached;
+
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const season = month >= 3 && month <= 5 ? '春' :
+                 month >= 6 && month <= 8 ? '夏' :
+                 month >= 9 && month <= 11 ? '秋' : '冬';
+  const dateStr = `${now.getFullYear()}年${month}月${now.getDate()}日`;
+
+  const prof = S.profile?.profession || S.profession || '社会人';
+  const moyadMain = S.profile?.moyadMain || '';
+  const moyadSub  = (S.profile?.moyadSub || []).join('・');
+  const moyadCtx  = moyadMain ? `\nよくモヤモヤするテーマ：${moyadMain}${moyadSub ? '、' + moyadSub : ''}` : '';
+
+  const sys = 'あなたは言語化トレーニングアプリのコンテンツ担当です。毎日新鮮な言語化練習の課題を1つ生成します。';
+  const msgs = [{
+    role: 'user',
+    content: `今日の日付：${dateStr}（${season}）
+対象者の職業：${prof}${moyadCtx}
+
+以下の条件で「今日の言語化課題」を1つ生成してください。
+
+【テーマ】
+${prof}に関するシーン（職場・現場でのコミュニケーション・説明・提案・人間関係など）
+または${season}の季節トピック・時事ネタも可
+
+【形式の例】
+「〜を言葉で上手く伝える練習をしよう」
+「〜の場面で自分の気持ちを素直に言語化してみよう」
+「〜について、相手にわかるよう具体的に説明してみよう」
+
+【条件】
+- 30〜50文字程度
+- ${prof}が「あるある」と感じるリアルなシーン
+- 具体的でイメージしやすい内容
+
+課題テキストのみを返してください（鍵括弧・記号・前後の説明不要）。`
+  }];
+
+  try {
+    const text = await claude(sys, msgs);
+    const cleaned = text.trim().replace(/^[「」『』【】\-・。、\s]+|[「」』】\-・。、\s]+$/g, '');
+    localStorage.setItem(key, cleaned);
+    // 古いキャッシュを削除（7日以上前）
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('llk_daily_') && k !== key) localStorage.removeItem(k);
+    }
+    return cleaned;
+  } catch(e) {
+    console.error('[Daily API] failed:', e.message);
+    throw e; // 上位でキャッチして表示
+  }
+}
+
+async function loadDailyChallenge() {
+  const el = document.getElementById('daily-text');
+  const btn = document.getElementById('daily-refresh-btn');
+  if (!el) return;
+  el.style.opacity = '0.55';
+  el.textContent = '今日の課題を準備中…';
+  if (btn) btn.textContent = '⏳';
+  try {
+    const challenge = await getDailyChallenge();
+    el.textContent = challenge;
+    el.style.opacity = '1';
+    if (btn) btn.textContent = '🔄 更新';
+  } catch(e) {
+    console.error('[Daily] Error:', e);
+    el.textContent = '課題の読み込みに失敗しました。🔄 更新を押してください。';
+    el.style.opacity = '1';
+    if (btn) btn.textContent = '🔄 更新';
+  }
+}
+
+async function refreshDaily() {
+  localStorage.removeItem(todayKey()); // キャッシュ削除して再生成
+  await loadDailyChallenge();
+}
+
+// ══════════════════════════════
+//  HOME
+// ══════════════════════════════
+function renderHome() {
+  const now = new Date();
+  document.getElementById('daily-date').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const remaining = SESSION_LIMIT - S.sessionsUsed;
+  const countEl = document.getElementById('session-count');
+  const banner = document.getElementById('session-banner');
+  if (remaining <= 0) {
+    banner.style.background = '#FEF2F2';
+    banner.style.borderColor = '#FCA5A5';
+    countEl.innerHTML = `<span style="color:#DC2626;font-weight:700;">上限 ${SESSION_LIMIT}/${SESSION_LIMIT}</span>
+      <button onclick="resetSessions()" style="margin-left:10px;padding:4px 12px;background:#DC2626;color:#fff;border:none;border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">リセット</button>`;
+  } else {
+    banner.style.background = '';
+    banner.style.borderColor = '';
+    countEl.textContent = `残り ${remaining} / ${SESSION_LIMIT} 回`;
+    countEl.style.color = remaining <= 5 ? '#D97706' : 'var(--s700)';
+  }
+  loadDailyChallenge();
+}
+
+function startFromHome() {
+  const theme = (document.getElementById('home-theme-inp').value || '').trim();
+  if (!theme) { toast('テーマを入力してください'); return; }
+  if (S.sessionsUsed >= SESSION_LIMIT) { showLimitOverlay(); return; }
+  document.getElementById('home-theme-inp').value = '';
+  startPractice(theme);
+}
+
+function openDailyMode() {
+  const text = document.getElementById('daily-text').textContent.trim();
+  if (!text || text.includes('準備中') || text.includes('失敗')) {
+    toast('課題の読み込みを待ってください');
+    return;
+  }
+  if (S.sessionsUsed >= SESSION_LIMIT) { showLimitOverlay(); return; }
+  startPractice(text);
+}
+
+async function startPractice(theme) {
+  if (!theme) { toast('テーマを入力してください'); return; }
+  if (S.sessionsUsed >= SESSION_LIMIT) {
+    showLimitOverlay();
+    return;
+  }
+
+  S.theme = theme; S.msgs = []; S.disp = []; S.whyCount = 0;
+  S.maxWhy = 3; S.extendCount = 0; S.done = false;
+
+  const m = MODES.why5;
+  document.getElementById('prac-title').textContent = m.name;
+  const badge = document.getElementById('prac-badge');
+  badge.textContent = m.badge; badge.style.background = m.bc; badge.style.color = m.btc;
+  document.getElementById('prac-theme').textContent = theme;
+
+  resetDots();
+
+  document.getElementById('done-bar').style.display = 'none';
+  document.getElementById('continue-bar').style.display = 'none';
+  document.getElementById('input-area').style.display = 'flex';
+  document.getElementById('msg-inp').value = '';
+  document.getElementById('msg-inp').disabled = false;
+  document.getElementById('send-btn').disabled = false;
+  _chatAtBottom = true;
+  document.getElementById('chat').innerHTML = '';
+  initChatScrollWatch();
+
+  show('practice');
+
+  // Opener (no API call)
+  pushDisp('ai', `テーマ「${theme}」について、まずあなたの考えや意見を自由に話してください。正解はありません。率直に思ったことを話してみてください。`);
+  renderChat();
+}
+
+// ══════════════════════════════
+//  CHAT
+// ══════════════════════════════
+function pushDisp(role, content) { S.disp.push({ role, content }); }
+
+function renderChat() {
+  const area = document.getElementById('chat');
+  area.innerHTML = '';
+  S.disp.forEach(m => {
+    const wrap = document.createElement('div');
+    wrap.className = `bw ${m.role}`;
+    const sender = document.createElement('div');
+    sender.className = 'bsender';
+    sender.textContent = m.role === 'user' ? 'あなた' : 'AI コーチ';
+    const bub = document.createElement('div');
+    bub.className = `bubble ${m.role}`;
+    bub.textContent = m.content;
+    wrap.appendChild(sender); wrap.appendChild(bub);
+    area.appendChild(wrap);
+  });
+  if (_chatAtBottom) setTimeout(() => { area.scrollTop = area.scrollHeight; }, 40);
+}
+
+function initChatScrollWatch() {
+  const chat = document.getElementById('chat');
+  if (chat._scrollWatched) return;
+  chat._scrollWatched = true;
+  chat.addEventListener('scroll', function() {
+    _chatAtBottom = (this.scrollHeight - this.scrollTop - this.clientHeight) < 60;
+  });
+}
+
+function setTyping(on) {
+  const area = document.getElementById('chat');
+  const ex = area.querySelector('.typing-wrap');
+  if (ex) ex.remove();
+  if (!on) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'bw ai typing-wrap';
+  const sender = document.createElement('div');
+  sender.className = 'bsender'; sender.textContent = 'AI コーチ';
+  const ind = document.createElement('div');
+  ind.className = 'typing';
+  ind.innerHTML = '<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>';
+  wrap.appendChild(sender); wrap.appendChild(ind);
+  area.appendChild(wrap);
+  area.scrollTop = area.scrollHeight;
+}
+
+function setLocked(v) {
+  document.getElementById('msg-inp').disabled = v;
+  document.getElementById('send-btn').disabled = v;
+}
+
+function resetDots() {
+  const container = document.getElementById('why-dots');
+  container.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'why-dot'; dot.id = 'wd' + i;
+    container.appendChild(dot);
+  }
+  container.style.display = 'flex';
+}
+
+function expandDots() {
+  const container = document.getElementById('why-dots');
+  for (let i = 3; i < 5; i++) {
+    if (!document.getElementById('wd' + i)) {
+      const dot = document.createElement('div');
+      dot.className = 'why-dot'; dot.id = 'wd' + i;
+      container.appendChild(dot);
+    }
+  }
+}
+
+function updateDots() {
+  for (let i = 0; i < 5; i++) {
+    const el = document.getElementById('wd' + i);
+    if (el) el.classList.toggle('done', i < S.whyCount);
+  }
+}
+
+async function extendSession() {
+  S.extendCount++;
+  S.maxWhy = 5;
+  expandDots();
+  document.getElementById('continue-bar').style.display = 'none';
+  document.getElementById('input-area').style.display = 'flex';
+  setLocked(true);
+
+  S.msgs.push({ role: 'user', content: '[CONTINUE]' });
+  setTyping(true);
+
+  try {
+    const aiRaw = await claude(SYS.why5(S.theme), S.msgs);
+    setTyping(false);
+
+    const complete = aiRaw.includes('[COMPLETE]');
+    const aiClean  = aiRaw.replace(/\[COMPLETE\]|\[PAUSE\]/g, '').trim();
+
+    S.msgs.push({ role: 'assistant', content: aiRaw });
+    pushDisp('ai', aiClean);
+
+    const m = aiClean.match(/【WHY\s*(\d+)\/5】/);
+    if (m) { S.whyCount = parseInt(m[1]); updateDots(); }
+
+    _chatAtBottom = true;
+    renderChat();
+
+    if (complete || S.whyCount >= 5) {
+      S.done = true;
+      document.getElementById('done-bar').style.display = 'block';
+      document.getElementById('input-area').style.display = 'none';
+    } else {
+      setLocked(false);
+      document.getElementById('msg-inp').focus();
+    }
+  } catch(err) {
+    setTyping(false);
+    setLocked(false);
+    toast('❌ ' + err.message);
+  }
+}
+
+function endAtThree() {
+  document.getElementById('continue-bar').style.display = 'none';
+  document.getElementById('done-bar').style.display = 'block';
+  document.getElementById('input-area').style.display = 'none';
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('msg-inp');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; autoResize(inp);
+  setLocked(true);
+
+  pushDisp('user', text);
+  S.msgs.push({ role: 'user', content: text });
+  _chatAtBottom = true;
+  renderChat();
+  setTyping(true);
+
+  try {
+    const sys = SYS.why5(S.theme);
+    const aiRaw = await claude(sys, S.msgs);
+    setTyping(false);
+
+    const complete = aiRaw.includes('[COMPLETE]');
+    const pause    = aiRaw.includes('[PAUSE]');
+    const aiClean  = aiRaw.replace(/\[COMPLETE\]|\[PAUSE\]/g, '').trim();
+
+    S.msgs.push({ role: 'assistant', content: aiRaw });
+    pushDisp('ai', aiClean);
+
+    const m = aiClean.match(/【WHY\s*(\d+)\/5】/);
+    if (m) { S.whyCount = parseInt(m[1]); updateDots(); }
+
+    _chatAtBottom = true;
+    renderChat();
+
+    if (complete || S.whyCount >= 5) {
+      S.done = true;
+      document.getElementById('done-bar').style.display = 'block';
+      document.getElementById('input-area').style.display = 'none';
+    } else if (pause || S.whyCount >= S.maxWhy) {
+      document.getElementById('continue-bar').style.display = 'block';
+      document.getElementById('input-area').style.display = 'none';
+    } else {
+      setLocked(false);
+      document.getElementById('msg-inp').focus();
+    }
+  } catch(err) {
+    setTyping(false);
+    setLocked(false);
+    toast('❌ ' + (err.message || 'エラーが発生しました'));
+  }
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+function confirmEnd() {
+  if (S.msgs.length > 0 && !confirm('練習を中断しますか？')) return;
+  goHome();
+}
+
+// ══════════════════════════════
+//  EVALUATE
+// ══════════════════════════════
+async function finishPractice() {
+  show('result');
+  document.getElementById('r-grade').textContent = '…';
+  document.getElementById('r-score').textContent = '採点中';
+  document.getElementById('r-advice').textContent = '採点中です…';
+  document.getElementById('r-phrase').textContent = '';
+  document.getElementById('r-hl-sec').style.display = 'none';
+  document.getElementById('r-label').textContent = `${MODES[S.mode].name} ｜ ${S.theme}`;
+  document.getElementById('score-grid').innerHTML = '';
+
+  try {
+    const log = S.disp.map(m =>
+      `${m.role === 'user' ? '【あなた】' : '【AIコーチ】'}\n${m.content}`
+    ).join('\n\n');
+
+    const evalMsgs = [{
+      role: 'user',
+      content: `モード：${MODES[S.mode].name}\nテーマ：${S.theme}\n\n会話ログ：\n${log}`,
+    }];
+
+    const raw = await claude(getEvalSys(), evalMsgs);
+    const match = raw.match(/\{[\s\S]*\}/);
+    const res = JSON.parse(match ? match[0] : raw);
+    renderResult(res);
+    saveHistory(res);
+  } catch(err) {
+    document.getElementById('r-grade').textContent = '?';
+    document.getElementById('r-score').textContent = 'エラー';
+    document.getElementById('r-advice').textContent = `採点中にエラーが発生しました：${err.message}`;
+  }
+}
+
+function renderResult(res) {
+  const g = res.grade || 'B';
+  const gc = { S:'gs', A:'ga', B:'gb', C:'gc' }[g] || 'gb';
+  document.getElementById('r-grade').textContent = g;
+  document.getElementById('r-grade').className = `res-grade ${gc}`;
+  document.getElementById('r-score').textContent = `${res.total || 0}点`;
+
+  const grid = document.getElementById('score-grid');
+  grid.innerHTML = '';
+  [
+    { lbl:'思考の深さ',     val: res.depth || 0 },
+    { lbl:'具体性',         val: res.concreteness || 0 },
+    { lbl:'表現の豊かさ',   val: res.expression || 0 },
+    { lbl:'伝わりやすさ',   val: res.clarity || 0 },
+  ].forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'sc-item';
+    el.innerHTML = `<div class="sc-lbl">${s.lbl}</div>
+      <div class="sc-bar"><div class="sc-fill" id="sf-${s.lbl}"></div></div>
+      <div><span class="sc-val">${s.val}</span><span class="sc-max">/25</span></div>`;
+    grid.appendChild(el);
+    setTimeout(() => {
+      const fill = el.querySelector('.sc-fill');
+      if (fill) fill.style.width = `${(s.val / 25) * 100}%`;
+    }, 100);
+  });
+
+  if (res.highlight) {
+    document.getElementById('r-hl').textContent = `"${res.highlight}"`;
+    document.getElementById('r-hl-sec').style.display = 'block';
+  }
+  document.getElementById('r-advice').textContent = res.advice || '';
+  document.getElementById('r-phrase').textContent = res.betterPhrasing || '';
+}
+
+// ══════════════════════════════
+//  HISTORY
+// ══════════════════════════════
+function saveHistory(res) {
+  const entry = {
+    id:            Date.now(),
+    date:          new Date().toISOString(),
+    mode:          'why5',
+    theme:         S.theme,
+    score:         res.total || 0,
+    grade:         res.grade || 'B',
+    advice:        res.advice || '',
+    betterPhrasing: res.betterPhrasing || '',
+    highlight:     res.highlight || '',
+    msgs:          S.disp,
+    extended:      S.extendCount > 0,
+    extendCount:   S.extendCount,
+  };
+  S.history.unshift(entry);
+  if (S.history.length > 60) S.history = S.history.slice(0, 60);
+  S.sessionsUsed = Math.min(S.sessionsUsed + 1, SESSION_LIMIT);
+  try {
+    localStorage.setItem('llk_hist', JSON.stringify(S.history));
+    localStorage.setItem('llk_sessions', String(S.sessionsUsed));
+  } catch(e) {}
+}
+
+function buildMsgsHtml(msgs) {
+  if (!msgs || !msgs.length) return '';
+  const bubbles = msgs.map(m => {
+    const isUser = m.role === 'user';
+    return `<div style="display:flex;flex-direction:column;align-items:${isUser ? 'flex-end' : 'flex-start'};">
+      <div style="font-size:10px;font-weight:700;color:${isUser ? 'var(--s600)' : 'var(--g400)'};margin-bottom:2px;">${isUser ? 'あなた' : 'AIコーチ'}</div>
+      <div style="background:${isUser ? 'var(--s100)' : 'var(--g100)'};border-radius:10px;padding:8px 12px;font-size:12px;color:${isUser ? 'var(--s800)' : 'var(--g600)'};line-height:1.6;max-width:90%;">${esc(m.content)}</div>
+    </div>`;
+  }).join('');
+  return `<div>
+    <div class="hist-sec-lbl">📝 会話の記録</div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;padding:2px 2px 2px 0;">${bubbles}</div>
+  </div>`;
+}
+
+function renderHistory() {
+  const list = document.getElementById('hist-list');
+  const empty = document.getElementById('hist-empty');
+  list.innerHTML = '';
+  if (S.history.length === 0) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  S.history.forEach(e => {
+    const gc = { S:'bs-s', A:'bs-a', B:'bs-b', C:'bs-c' }[e.grade] || 'bs-b';
+    const d = new Date(e.date);
+    const ds = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <div class="hist-top">
+        <span class="hist-date">${ds}</span>
+        <span class="hist-badge ${gc}">${e.grade} · ${e.score}点</span>
+      </div>
+      <div class="hist-theme">${esc(e.theme)}</div>
+      <div class="hist-mode">${MODES[e.mode]?.name || e.mode}</div>
+      <div class="hist-detail" id="hd-${e.id}">
+        <div class="hist-detail-inner">
+          ${e.highlight ? `<div><div class="hist-sec-lbl">🌟 光った一言</div><div class="hist-highlight-box">"${esc(e.highlight)}"</div></div>` : ''}
+          ${e.advice ? `<div><div class="hist-sec-lbl">💬 AIアドバイス</div><div class="hist-result-summary">${esc(e.advice)}</div></div>` : ''}
+          ${e.betterPhrasing ? `<div><div class="hist-sec-lbl">✨ もっと上手な言い方</div><div class="hist-better">${esc(e.betterPhrasing)}</div></div>` : ''}
+          ${buildMsgsHtml(e.msgs)}
+        </div>
+      </div>`;
+
+    item.addEventListener('click', () => {
+      const det = document.getElementById(`hd-${e.id}`);
+      const isOpen = det.classList.contains('open');
+      document.querySelectorAll('.hist-detail.open').forEach(d => d.classList.remove('open'));
+      if (!isOpen) det.classList.add('open');
+    });
+    list.appendChild(item);
+  });
+}
+
+// ══════════════════════════════
+//  SETTINGS
+// ══════════════════════════════
+function openSettings() {
+  document.getElementById('model-sel').value = S.model;
+  const lbl = document.getElementById('settings-prof-lbl');
+  if (lbl) lbl.textContent = S.profile?.profession || S.profession || '未設定';
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function setProfInput(val) {
+  const inp = document.getElementById('onb-prof');
+  if (inp) { inp.value = val; inp.focus(); }
+}
+function selectMainMoya(btn) {
+  document.querySelectorAll('#moya-main-chips .chip').forEach(c => c.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function toggleSubMoya(btn) {
+  btn.classList.toggle('sel');
+}
+function submitProfile() {
+  const prof = (document.getElementById('onb-prof').value || '').trim();
+  if (!prof) { toast('職業を入力してください'); return; }
+  const age        = (document.getElementById('onb-age').value  || '').trim();
+  const moyadMain  = document.querySelector('#moya-main-chips .chip.sel')?.dataset.val || '';
+  const moyadSub   = [...document.querySelectorAll('#moya-sub-chips .chip.sel')].map(el => el.dataset.val);
+  S.profile    = { age, profession: prof, moyadMain, moyadSub };
+  S.profession = prof;
+  localStorage.setItem('llk_profile',    JSON.stringify(S.profile));
+  localStorage.setItem('llk_profession', prof);
+  localStorage.removeItem(todayKey());
+  renderHome();
+  show('home');
+}
+function editProfile() {
+  closeSettings();
+  if (S.profile) {
+    document.getElementById('onb-prof').value = S.profile.profession || '';
+    document.getElementById('onb-age').value  = S.profile.age || '';
+    document.querySelectorAll('#moya-main-chips .chip').forEach(c => {
+      c.classList.toggle('sel', c.dataset.val === S.profile.moyadMain);
+    });
+    document.querySelectorAll('#moya-sub-chips .chip').forEach(c => {
+      c.classList.toggle('sel', (S.profile.moyadSub || []).includes(c.dataset.val));
+    });
+  }
+  show('onboarding');
+}
+function changeProfession() { editProfile(); }
+async function generateThemeSuggestions(profession) {
+  const cacheKey = `llk_themes_${profession}_why5`;
+  const cached = localStorage.getItem(cacheKey);
+  const lbl = document.getElementById('chips-lbl');
+  if (cached) {
+    try {
+      lbl.textContent = `${profession}向けテーマ例`;
+      renderChips('chips-prof', JSON.parse(cached));
+      return;
+    } catch(e) {}
+  }
+  const sys = 'あなたは言語化トレーニングのコンテンツ担当です。';
+  const msgs = [{ role: 'user', content:
+    `職業：${profession}\n\n「なぜ？」を深掘りしたい問いかけテーマを5つ生成してください。\n各テーマは20〜35文字程度、${profession}が「あるある」と感じるリアルな内容で。\n\nJSON配列のみで返してください：["テーマ1","テーマ2","テーマ3","テーマ4","テーマ5"]`
+  }];
+  try {
+    const raw = await claude(sys, msgs);
+    const match = raw.match(/\[[\s\S]*?\]/);
+    const themes = JSON.parse(match ? match[0] : raw);
+    localStorage.setItem(cacheKey, JSON.stringify(themes));
+    if (lbl) lbl.textContent = `${profession}向けテーマ例`;
+    renderChips('chips-prof', themes);
+  } catch(e) {
+    if (lbl) lbl.textContent = 'テーマを直接入力してください';
+    const chipsEl = document.getElementById('chips-prof');
+    if (chipsEl) chipsEl.innerHTML = '';
+  }
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function maybeCloseSettings(e) {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+}
+function saveSettings() {
+  S.model = document.getElementById('model-sel').value;
+  localStorage.setItem('llk_model', S.model);
+  closeSettings();
+  toast('✓ 設定を保存しました');
+}
+// ══════════════════════════════
+//  LIMIT
+// ══════════════════════════════
+function showLimitOverlay() {
+  const el = document.getElementById('limit-used');
+  if (el) el.textContent = `${S.sessionsUsed} / ${SESSION_LIMIT}`;
+  document.getElementById('limit-overlay').classList.add('open');
+}
+function closeLimitOverlay() {
+  document.getElementById('limit-overlay').classList.remove('open');
+}
+function resetSessions() {
+  S.sessionsUsed = 0;
+  localStorage.setItem('llk_sessions', '0');
+  closeLimitOverlay();
+  renderHome();
+  toast('✓ 利用回数をリセットしました');
+}
+
+// ══════════════════════════════
+//  UTILS
+// ══════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ══════════════════════════════
+//  KEYBOARD / VIEWPORT
+// ══════════════════════════════
+function applyViewport() {
+  if (!window.visualViewport || window.innerWidth > 420) return;
+  const vv = window.visualViewport;
+  const app = document.getElementById('app');
+  app.style.height = vv.height + 'px';
+  app.style.transform = `translateY(${vv.offsetTop}px)`;
+  window.scrollTo(0, 0);
+  // キーボード展開時に最新メッセージへスクロール
+  const practice = document.getElementById('sc-practice');
+  if (practice && practice.classList.contains('active')) {
+    const chat = document.getElementById('chat');
+    if (chat) {
+      _chatAtBottom = true;
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+    }
+  }
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', applyViewport);
+  window.visualViewport.addEventListener('scroll', applyViewport);
+}
+
+// 入力欄フォーカス時に最新メッセージへスクロール
+document.getElementById('msg-inp').addEventListener('focus', function() {
+  const practice = document.getElementById('sc-practice');
+  if (practice && practice.classList.contains('active')) {
+    const chat = document.getElementById('chat');
+    if (chat) {
+      _chatAtBottom = true;
+      setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 150);
+    }
+  }
+});
+
+// ══════════════════════════════
+//  INIT
+// ══════════════════════════════
+if (!S.profile) {
+  show('onboarding');
+} else {
+  renderHome();
+  show('home');
+}
+</script>
+</body>
+</html>
